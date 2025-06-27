@@ -6,6 +6,7 @@ function App() {
 
   return (
     <>
+      ANTHARES APP
       <div className="container">
         <AppRoutes />
       </div>
