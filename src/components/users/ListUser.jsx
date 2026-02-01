@@ -1,14 +1,56 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 
 export const ListUser = () => {
 
     const [customerList, setCustomerList] = useState([])
+    const [searchTerm, setSearchTerm] = useState('')
+    const [loading, setLoading] = useState(false)
+    const timeoutRef = useRef(null)
+
+    const fetchCustomers = async (query = '') => {
+    setLoading(true)
+    try {
+        const url = `http://localhost:9000/customers/search?q=${encodeURIComponent(query)}&page=0&size=20`
+        
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        
+        const data = await response.json()
+        setCustomerList(data.content || data) // En caso de que la búsqueda devuelva un objeto con 'content'
+    } catch (error) {
+        console.error('Error fetching customers:', error)
+        setCustomerList([])
+    } finally {
+        setLoading(false)
+    }
+}
+
+    const handleSearch = (e) => {
+        const value = e.target.value
+        setSearchTerm(value)
+        
+        // Limpiar el timeout anterior si existe
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current)
+        }
+        
+        // Crear nuevo timeout
+        timeoutRef.current = setTimeout(() => {
+            // Solo buscar si hay 3 o más caracteres, sino mostrar todos
+            if (value.trim().length >= 3) {
+                fetchCustomers(value)
+            } else {
+                fetchCustomers('') // Query vacío para obtener todos los clientes
+            }
+        }, 500)
+    }
 
     useEffect(() => {
-        fetch('http://localhost:9000/customers')
-            .then(res => res.json())
-            .then(data => setCustomerList(data))
-            .catch(() => setCustomerList([]))
+        fetchCustomers()
     }, [])
 
     return (
@@ -30,6 +72,43 @@ export const ListUser = () => {
                             <h5 className="card-title mb-0">LISTA DE CLIENTES</h5>
                         </div>
                         <div className="card-body">
+                            <div className="mb-3">
+                                <div className="row">
+                                    <div className="col-md-6">
+                                        <div className="input-group">
+                                            <span className="input-group-text">
+                                                <i className="bi bi-search"></i>
+                                            </span>
+                                            <input
+                                                type="text"
+                                                className="form-control"
+                                                placeholder="Buscar por razón social, RUC, responsable..."
+                                                value={searchTerm}
+                                                onChange={handleSearch}
+                                            />
+                                            {searchTerm && (
+                                                <button
+                                                    className="btn btn-outline-secondary"
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSearchTerm('')
+                                                        fetchCustomers()
+                                                    }}
+                                                >
+                                                    <i className="bi bi-x"></i>
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {loading && (
+                                <div className="text-center mb-3">
+                                    <div className="spinner-border spinner-border-sm" role="status">
+                                        <span className="visually-hidden">Buscando...</span>
+                                    </div>
+                                </div>
+                            )}
                             <table id="listCustomersTable" className="table table-striped table-hover table-bordered">
                                 <thead>
                                     <tr>
@@ -45,7 +124,9 @@ export const ListUser = () => {
                                 <tbody>
                                     {customerList.length === 0 ? (
                                     <tr>
-                                        <td colSpan="7" className="text-center">No hay clientes</td>
+                                        <td colSpan="7" className="text-center">
+                                            {loading ? 'Cargando...' : searchTerm ? 'No se encontraron resultados' : 'No hay clientes'}
+                                        </td>
                                     </tr>
                                     ) : (
                                         customerList.map((customer) => (
