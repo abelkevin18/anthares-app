@@ -5,6 +5,7 @@ export const ListUser = () => {
     const [customerList, setCustomerList] = useState([])
     const [searchTerm, setSearchTerm] = useState('')
     const [loading, setLoading] = useState(false)
+    const [copiedId, setCopiedId] = useState(null)
     const timeoutRef = useRef(null)
 
     const fetchCustomers = async (query = '') => {
@@ -47,6 +48,17 @@ export const ListUser = () => {
                 fetchCustomers('') // Query vacío para obtener todos los clientes
             }
         }, 500)
+    }
+
+    const copyToClipboard = async (text, customerId) => {
+        try {
+            await navigator.clipboard.writeText(text)
+            setCopiedId(customerId)
+            // Ocultar la confirmación después de 2 segundos
+            setTimeout(() => setCopiedId(null), 2000)
+        } catch (err) {
+            console.error('Error al copiar al portapapeles:', err)
+        }
     }
 
     useEffect(() => {
@@ -136,7 +148,23 @@ export const ListUser = () => {
                                                 <td>{customer.ruc}</td>
                                                 <td>{customer.dni}</td>
                                                 <td>{customer.sunatUser}</td>
-                                                <td>{customer.sunatPassword}</td>
+                                                <td>
+                                                    <div className="d-flex align-items-center py-0">
+                                                        <span className="me-2">{customer.sunatPassword}</span>
+                                                        <button
+                                                            className="btn btn-link p-0"
+                                                            onClick={() => copyToClipboard(customer.sunatPassword, customer.id)}
+                                                            title="Copiar contraseña"
+                                                            style={{ border: 'none', fontSize: '0.875rem', minWidth: 'auto', lineHeight: '1' }}
+                                                        >
+                                                            {copiedId === customer.id ? (
+                                                                <i className="bi bi-check-circle-fill text-success"></i>
+                                                            ) : (
+                                                                <i className="bi bi-clipboard text-muted"></i>
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                </td>
                                                 <td>{customer.phoneNumber}</td>
                                             </tr>
                                         ))
