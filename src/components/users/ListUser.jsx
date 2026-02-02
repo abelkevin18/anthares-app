@@ -6,6 +6,7 @@ export const ListUser = () => {
     const [searchTerm, setSearchTerm] = useState('')
     const [loading, setLoading] = useState(false)
     const [copiedId, setCopiedId] = useState(null)
+    const [visiblePasswords, setVisiblePasswords] = useState(new Set())
     const timeoutRef = useRef(null)
 
     const fetchCustomers = async (query = '') => {
@@ -59,6 +60,18 @@ export const ListUser = () => {
         } catch (err) {
             console.error('Error al copiar al portapapeles:', err)
         }
+    }
+
+    const togglePasswordVisibility = (customerId) => {
+        setVisiblePasswords(prev => {
+            const newSet = new Set(prev)
+            if (newSet.has(customerId)) {
+                newSet.delete(customerId)
+            } else {
+                newSet.add(customerId)
+            }
+            return newSet
+        })
     }
 
     useEffect(() => {
@@ -150,7 +163,20 @@ export const ListUser = () => {
                                                 <td>{customer.sunatUser}</td>
                                                 <td>
                                                     <div className="d-flex align-items-center py-0">
-                                                        <span className="me-2">{customer.sunatPassword}</span>
+                                                        <span className="me-2">
+                                                            {visiblePasswords.has(customer.id) 
+                                                                ? customer.sunatPassword 
+                                                                : '••••••••'
+                                                            }
+                                                        </span>
+                                                        <button
+                                                            className="btn btn-link p-0 me-1"
+                                                            onClick={() => togglePasswordVisibility(customer.id)}
+                                                            title={visiblePasswords.has(customer.id) ? "Ocultar contraseña" : "Mostrar contraseña"}
+                                                            style={{ border: 'none', fontSize: '0.875rem', minWidth: 'auto', lineHeight: '1' }}
+                                                        >
+                                                            <i className={`bi ${visiblePasswords.has(customer.id) ? 'bi-eye-slash' : 'bi-eye'} text-muted`}></i>
+                                                        </button>
                                                         <button
                                                             className="btn btn-link p-0"
                                                             onClick={() => copyToClipboard(customer.sunatPassword, customer.id)}
