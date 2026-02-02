@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react'
+import { CustomerDetailsModal } from './CustomerDetailsModal'
 
 export const ListUser = () => {
 
@@ -7,6 +8,8 @@ export const ListUser = () => {
     const [loading, setLoading] = useState(false)
     const [copiedCell, setCopiedCell] = useState(null)
     const [visiblePasswords, setVisiblePasswords] = useState(new Set())
+    const [selectedCustomer, setSelectedCustomer] = useState(null)
+    const [showModal, setShowModal] = useState(false)
     const timeoutRef = useRef(null)
 
     const fetchCustomers = async (query = '') => {
@@ -72,6 +75,16 @@ export const ListUser = () => {
             }
             return newSet
         })
+    }
+
+    const showDetailsModal = (customer) => {
+        setSelectedCustomer(customer)
+        setShowModal(true)
+    }
+
+    const closeModal = () => {
+        setSelectedCustomer(null)
+        setShowModal(false)
     }
 
     useEffect(() => {
@@ -164,12 +177,13 @@ export const ListUser = () => {
                                         <th>Usuario</th>
                                         <th>Clave</th>
                                         <th>Celular</th>
+                                        <th>Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {customerList.length === 0 ? (
                                     <tr>
-                                        <td colSpan="7" className="text-center">
+                                        <td colSpan="8" className="text-center">
                                             {loading ? 'Cargando...' : searchTerm ? 'No se encontraron resultados' : 'No hay clientes'}
                                         </td>
                                     </tr>
@@ -265,6 +279,15 @@ export const ListUser = () => {
                                                         <span className="copy-feedback">Copiado!</span>
                                                     )}
                                                 </td>
+                                                <td>
+                                                    <button
+                                                        className="btn btn-sm btn-outline-primary"
+                                                        onClick={() => showDetailsModal(customer)}
+                                                        title="Ver detalles del cliente"
+                                                    >
+                                                        <i className="bi bi-zoom-in me-1"></i>
+                                                    </button>
+                                                </td>
                                             </tr>
                                         ))
                                     )}
@@ -274,6 +297,12 @@ export const ListUser = () => {
                     </div>
                 </div>
             </div>
+
+            <CustomerDetailsModal 
+                customer={selectedCustomer}
+                isOpen={showModal}
+                onClose={closeModal}
+            />
         </>
     )
 }
