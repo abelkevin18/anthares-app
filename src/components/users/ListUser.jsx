@@ -5,7 +5,7 @@ export const ListUser = () => {
     const [customerList, setCustomerList] = useState([])
     const [searchTerm, setSearchTerm] = useState('')
     const [loading, setLoading] = useState(false)
-    const [copiedId, setCopiedId] = useState(null)
+    const [copiedCell, setCopiedCell] = useState(null)
     const [visiblePasswords, setVisiblePasswords] = useState(new Set())
     const timeoutRef = useRef(null)
 
@@ -51,12 +51,12 @@ export const ListUser = () => {
         }, 500)
     }
 
-    const copyToClipboard = async (text, customerId) => {
+    const copyToClipboard = async (text, customerId, column) => {
         try {
             await navigator.clipboard.writeText(text)
-            setCopiedId(customerId)
+            setCopiedCell(`${customerId}-${column}`)
             // Ocultar la confirmación después de 2 segundos
-            setTimeout(() => setCopiedId(null), 2000)
+            setTimeout(() => setCopiedCell(null), 2000)
         } catch (err) {
             console.error('Error al copiar al portapapeles:', err)
         }
@@ -86,6 +86,26 @@ export const ListUser = () => {
                 #listCustomersTable th,
                 #listCustomersTable td {
                     border-color: #dee2e6 !important;
+                }
+                .clickable-cell {
+                    cursor: pointer;
+                    position: relative;
+                }
+                .clickable-cell:hover {
+                    background-color: #f8f9fa !important;
+                }
+                .copy-feedback {
+                    position: absolute;
+                    top: 50%;
+                    right: 5px;
+                    transform: translateY(-50%) translateY(8px);
+                    color: #fcfcfc;
+                    font-size: 0.75rem;
+                    opacity: 0.8;
+                    background: rgba(3, 2, 2, 0.9);
+                    padding: 1px 4px;
+                    border-radius: 3px;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
                 }
             `}
         </style>
@@ -156,42 +176,95 @@ export const ListUser = () => {
                                     ) : (
                                         customerList.map((customer) => (
                                             <tr key={customer.id}>
-                                                <td>{customer.companyName}</td>
-                                                <td>{customer.generalManager}</td>
-                                                <td>{customer.ruc}</td>
-                                                <td>{customer.dni}</td>
-                                                <td>{customer.sunatUser}</td>
-                                                <td>
+                                                <td 
+                                                    className="clickable-cell" 
+                                                    onClick={() => copyToClipboard(customer.companyName, customer.id, 'companyName')}
+                                                    title="Clic para copiar"
+                                                >
+                                                    {customer.companyName}
+                                                    {copiedCell === `${customer.id}-companyName` && (
+                                                        <span className="copy-feedback">Copiado!</span>
+                                                    )}
+                                                </td>
+                                                <td 
+                                                    className="clickable-cell" 
+                                                    onClick={() => copyToClipboard(customer.generalManager, customer.id, 'generalManager')}
+                                                    title="Clic para copiar"
+                                                >
+                                                    {customer.generalManager}
+                                                    {copiedCell === `${customer.id}-generalManager` && (
+                                                        <span className="copy-feedback">Copiado!</span>
+                                                    )}
+                                                </td>
+                                                <td 
+                                                    className="clickable-cell" 
+                                                    onClick={() => copyToClipboard(customer.ruc, customer.id, 'ruc')}
+                                                    title="Clic para copiar"
+                                                >
+                                                    {customer.ruc}
+                                                    {copiedCell === `${customer.id}-ruc` && (
+                                                        <span className="copy-feedback">Copiado!</span>
+                                                    )}
+                                                </td>
+                                                <td 
+                                                    className="clickable-cell" 
+                                                    onClick={() => copyToClipboard(customer.dni, customer.id, 'dni')}
+                                                    title="Clic para copiar"
+                                                >
+                                                    {customer.dni}
+                                                    {copiedCell === `${customer.id}-dni` && (
+                                                        <span className="copy-feedback">Copiado!</span>
+                                                    )}
+                                                </td>
+                                                <td 
+                                                    className="clickable-cell" 
+                                                    onClick={() => copyToClipboard(customer.sunatUser, customer.id, 'sunatUser')}
+                                                    title="Clic para copiar"
+                                                >
+                                                    {customer.sunatUser}
+                                                    {copiedCell === `${customer.id}-sunatUser` && (
+                                                        <span className="copy-feedback">Copiado!</span>
+                                                    )}
+                                                </td>
+                                                <td className="clickable-cell position-relative">
                                                     <div className="d-flex align-items-center py-0">
-                                                        <span className="me-2">
+                                                        <span 
+                                                            className="me-2 flex-grow-1"
+                                                            onClick={() => copyToClipboard(customer.sunatPassword, customer.id, 'sunatPassword')}
+                                                            title="Clic para copiar contraseña"
+                                                            style={{ cursor: 'pointer' }}
+                                                        >
                                                             {visiblePasswords.has(customer.id) 
                                                                 ? customer.sunatPassword 
                                                                 : '••••••••'
                                                             }
                                                         </span>
                                                         <button
-                                                            className="btn btn-link p-0 me-1"
-                                                            onClick={() => togglePasswordVisibility(customer.id)}
+                                                            className="btn btn-link p-0"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                togglePasswordVisibility(customer.id);
+                                                            }}
                                                             title={visiblePasswords.has(customer.id) ? "Ocultar contraseña" : "Mostrar contraseña"}
                                                             style={{ border: 'none', fontSize: '0.875rem', minWidth: 'auto', lineHeight: '1' }}
                                                         >
                                                             <i className={`bi ${visiblePasswords.has(customer.id) ? 'bi-eye-slash' : 'bi-eye'} text-muted`}></i>
                                                         </button>
-                                                        <button
-                                                            className="btn btn-link p-0"
-                                                            onClick={() => copyToClipboard(customer.sunatPassword, customer.id)}
-                                                            title="Copiar contraseña"
-                                                            style={{ border: 'none', fontSize: '0.875rem', minWidth: 'auto', lineHeight: '1' }}
-                                                        >
-                                                            {copiedId === customer.id ? (
-                                                                <i className="bi bi-check-circle-fill text-success"></i>
-                                                            ) : (
-                                                                <i className="bi bi-clipboard text-muted"></i>
-                                                            )}
-                                                        </button>
                                                     </div>
+                                                    {copiedCell === `${customer.id}-sunatPassword` && (
+                                                        <span className="copy-feedback">Copiado!</span>
+                                                    )}
                                                 </td>
-                                                <td>{customer.phoneNumber}</td>
+                                                <td 
+                                                    className="clickable-cell" 
+                                                    onClick={() => copyToClipboard(customer.phoneNumber, customer.id, 'phoneNumber')}
+                                                    title="Clic para copiar"
+                                                >
+                                                    {customer.phoneNumber}
+                                                    {copiedCell === `${customer.id}-phoneNumber` && (
+                                                        <span className="copy-feedback">Copiado!</span>
+                                                    )}
+                                                </td>
                                             </tr>
                                         ))
                                     )}
