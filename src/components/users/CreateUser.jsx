@@ -1,5 +1,6 @@
 import Swal from 'sweetalert2'
 import { useNavigate } from 'react-router-dom'
+import { buildApiUrl } from '../../config/apiConfig'
 
 export const CreateUser = () => {
   const navigate = useNavigate()
@@ -9,7 +10,7 @@ export const CreateUser = () => {
     const data = Object.fromEntries(formData.entries())
   
     try {
-      const response = await fetch('http://localhost:9000/customers', {
+      const response = await fetch(buildApiUrl('/customers'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

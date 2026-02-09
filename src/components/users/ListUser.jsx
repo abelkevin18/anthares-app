@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { CustomerDetailsModal } from './CustomerDetailsModal'
+import { buildApiUrl } from '../../config/apiConfig'
 
 export const ListUser = () => {
 
@@ -18,7 +19,7 @@ export const ListUser = () => {
     const fetchCustomers = async (query = '', page = 0) => {
     setLoading(true)
     try {
-        const url = `http://localhost:9000/customers/search?q=${encodeURIComponent(query)}&page=${page}&size=${pageSize}`
+        const url = `${buildApiUrl('/customers/search')}?q=${encodeURIComponent(query)}&page=${page}&size=${pageSize}`
         
         const response = await fetch(url, {
             method: 'GET',
