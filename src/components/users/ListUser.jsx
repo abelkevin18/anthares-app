@@ -10,12 +10,15 @@ export const ListUser = () => {
     const [visiblePasswords, setVisiblePasswords] = useState(new Set())
     const [selectedCustomer, setSelectedCustomer] = useState(null)
     const [showModal, setShowModal] = useState(false)
+    const [currentPage, setCurrentPage] = useState(0)
+    const [pagination, setPagination] = useState(null)
+    const pageSize = 10
     const timeoutRef = useRef(null)
 
-    const fetchCustomers = async (query = '') => {
+    const fetchCustomers = async (query = '', page = 0) => {
     setLoading(true)
     try {
-        const url = `http://localhost:9000/customers/search?q=${encodeURIComponent(query)}&page=0&size=20`
+        const url = `http://localhost:9000/customers/search?q=${encodeURIComponent(query)}&page=${page}&size=${pageSize}`
         
         const response = await fetch(url, {
             method: 'GET',
@@ -24,11 +27,22 @@ export const ListUser = () => {
             }
         })
         
-        const data = await response.json()
-        setCustomerList(data.content || data) // En caso de que la búsqueda devuelva un objeto con 'content'
+        const result = await response.json()
+        
+        // Manejar nueva estructura con statusCode y paginación
+        if (result.statusCode === 200) {
+            setCustomerList(result.data.customers || [])
+            setPagination(result.data.pagination)
+            setCurrentPage(page)
+        } else {
+            console.error('Error from API:', result.message)
+            setCustomerList([])
+            setPagination(null)
+        }
     } catch (error) {
         console.error('Error fetching customers:', error)
         setCustomerList([])
+        setPagination(null)
     } finally {
         setLoading(false)
     }
@@ -45,11 +59,13 @@ export const ListUser = () => {
         
         // Crear nuevo timeout
         timeoutRef.current = setTimeout(() => {
+            // Resetear a página 0 cuando se busca
+            setCurrentPage(0)
             // Solo buscar si hay 3 o más caracteres, sino mostrar todos
             if (value.trim().length >= 3) {
-                fetchCustomers(value)
+                fetchCustomers(value, 0)
             } else {
-                fetchCustomers('') // Query vacío para obtener todos los clientes
+                fetchCustomers('', 0) // Query vacío para obtener todos los clientes
             }
         }, 500)
     }
@@ -85,6 +101,18 @@ export const ListUser = () => {
     const closeModal = () => {
         setSelectedCustomer(null)
         setShowModal(false)
+    }
+
+    const handlePageChange = (newPage) => {
+        if (newPage >= 0 && newPage < (pagination?.totalPages || 1)) {
+            fetchCustomers(searchTerm, newPage)
+        }
+    }
+
+    const clearSearch = () => {
+        setSearchTerm('')
+        setCurrentPage(0)
+        fetchCustomers('', 0)
     }
 
     useEffect(() => {
@@ -148,10 +176,7 @@ export const ListUser = () => {
                                                 <button
                                                     className="btn btn-outline-secondary"
                                                     type="button"
-                                                    onClick={() => {
-                                                        setSearchTerm('')
-                                                        fetchCustomers()
-                                                    }}
+                                                    onClick={clearSearch}
                                                 >
                                                     <i className="bi bi-x"></i>
                                                 </button>
@@ -293,6 +318,95 @@ export const ListUser = () => {
                                     )}
                                 </tbody>
                             </table>
+                            
+                            {/* Paginación */}
+                            {pagination && (
+                                <div className="d-flex justify-content-between align-items-center mt-3">
+                                    <div className="text-muted">
+                                        Mostrando {pagination.numberOfElements} de {pagination.totalElements} clientes
+                                        {pagination.totalPages > 1 && ` - Página ${currentPage + 1} de ${pagination.totalPages}`}
+                                    </div>
+                                    {pagination.totalPages > 1 && (
+                                        <nav aria-label="Paginación de clientes">
+                                            <ul className="pagination mb-0">
+                                                <li className={`page-item ${pagination.first ? 'disabled' : ''}`}>
+                                                    <button 
+                                                        className="page-link" 
+                                                        onClick={() => handlePageChange(0)}
+                                                        disabled={pagination.first}
+                                                    >
+                                                        <i className="bi bi-chevron-double-left"></i>
+                                                    </button>
+                                                </li>
+                                                <li className={`page-item ${pagination.first ? 'disabled' : ''}`}>
+                                                    <button 
+                                                        className="page-link" 
+                                                        onClick={() => handlePageChange(currentPage - 1)}
+                                                        disabled={pagination.first}
+                                                    >
+                                                        <i className="bi bi-chevron-left"></i>
+                                                    </button>
+                                                </li>
+                                                
+                                                {/* Números de página */}
+                                                {Array.from({ length: pagination.totalPages }, (_, i) => i)
+                                                    .filter(page => 
+                                                        page === 0 || 
+                                                        page === pagination.totalPages - 1 || 
+                                                        Math.abs(page - currentPage) <= 2
+                                                    )
+                                                    .map((page, index, array) => {
+                                                        if (index > 0 && array[index - 1] !== page - 1) {
+                                                            return [
+                                                                <li key={`ellipsis-${page}`} className="page-item disabled">
+                                                                    <span className="page-link">...</span>
+                                                                </li>,
+                                                                <li key={page} className={`page-item ${page === currentPage ? 'active' : ''}`}>
+                                                                    <button 
+                                                                        className="page-link" 
+                                                                        onClick={() => handlePageChange(page)}
+                                                                    >
+                                                                        {page + 1}
+                                                                    </button>
+                                                                </li>
+                                                            ]
+                                                        }
+                                                        return (
+                                                            <li key={page} className={`page-item ${page === currentPage ? 'active' : ''}`}>
+                                                                <button 
+                                                                    className="page-link" 
+                                                                    onClick={() => handlePageChange(page)}
+                                                                >
+                                                                    {page + 1}
+                                                                </button>
+                                                            </li>
+                                                        )
+                                                    })
+                                                }
+                                                
+                                                <li className={`page-item ${pagination.last ? 'disabled' : ''}`}>
+                                                    <button 
+                                                        className="page-link" 
+                                                        onClick={() => handlePageChange(currentPage + 1)}
+                                                        disabled={pagination.last}
+                                                    >
+                                                        <i className="bi bi-chevron-right"></i>
+                                                    </button>
+                                                </li>
+                                                <li className={`page-item ${pagination.last ? 'disabled' : ''}`}>
+                                                    <button 
+                                                        className="page-link" 
+                                                        onClick={() => handlePageChange(pagination.totalPages - 1)}
+                                                        disabled={pagination.last}
+                                                    >
+                                                        <i className="bi bi-chevron-double-right"></i>
+                                                    </button>
+                                                </li>
+                                            </ul>
+                                        </nav>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
